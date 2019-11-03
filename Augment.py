@@ -58,3 +58,11 @@ class Generator():
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
+        #change brightness
+        if self.augmentBrigtness:
+            cols, rows, none = image.shape
+            brightness = np.sum(image[:,:,-1])/(255*cols*rows)
+            image = cv2.convertScaleAbs(image, alpha=1, beta=(255*(1-brightness)))
+        
+
+    
