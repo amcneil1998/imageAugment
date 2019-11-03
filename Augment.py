@@ -1,7 +1,10 @@
 import cv2
 
 #this method will perform all image agmentation on an image
-#input values can be either 
+#input values can be either Booleans such as false or 
+#decemals representing a 0-1.0 scale change
+#ceterain values like doHorizontalFlips should always be booleans
+#whereas others such as blur and brightness dont make since to be booleans
 def augment(imagePath, Zoom=False, Shear=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrigtness=False, augmentSaturation=False, addBlur=False, addNoise=False):
     image = cv2.imread(imagePath)
 
