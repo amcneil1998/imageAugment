@@ -7,5 +7,5 @@ Shear
 Horizontal Flips - done
 Brightness - done
 Saturation
-Blur 
+Blur- done
 Noise
