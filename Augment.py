@@ -9,7 +9,7 @@ class Generator():
     #this will create a generator that yeilds images loaded from the directory specified
     #in dirPath.  Output will yeild images of size Batch_sizeximagecolsximagerowsximagedepth.
     #values specified are transfered directly into agument image
-    def createGenerator(self, dirPath, Batch_size, zoom=False, shear=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrigtness=False, augmentSaturation=False, addBlur=False, addNoise=False, doRotation=False):
+    def createGenerator(self, dirPath, Batch_size, zoom=False, shear=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrigtness=False, augmentSaturation=False, addBlur=False, addNoise=False, doRotation=False, addSaturation=False):
         nameList = os.listdir(dirPath)
         testImage = cv2.imread(nameList[0])
         cols, rows, depth = testImage.shape
@@ -28,7 +28,8 @@ class Generator():
                                 augmentSaturation=augmentSaturation,
                                 addBlur=addBlur,
                                 addNoise=addNoise,
-                                doRotation=doRotation)
+                                doRotation=doRotation,
+                                addSaturation=addSaturation)
     
     #This method will take in an array of images as well as max agumentation values
     #it will then compute a random uniform augmentation between the specified agumentation value
@@ -44,7 +45,8 @@ class Generator():
                       augmentSaturation=False, 
                       addBlur=False, 
                       addNoise=False, 
-                      doRotation=False):
+                      doRotation=False,
+                      addSaturation=False):
 
         for i in range(0, Images.shape[0]):
             if zoom:
@@ -61,6 +63,8 @@ class Generator():
                 noiseVal = np.random.uniform(0, addNoise)
             if doRotation:
                 rotateVal = np.random.uniform(0, doRotation)
+            if addSaturation:
+                satVal = np.random.uniform(0, addSaturation)
 
             Images[i] = augment(Images[i], 
                                 Zoom=zoomVal, 
@@ -71,7 +75,8 @@ class Generator():
                                 augmentSaturation=satVal, 
                                 addBlur=blurVal, 
                                 addNoise=noiseVal, 
-                                doRotation=rotateVal)
+                                doRotation=rotateVal,
+                                addSaturation=satVal)
         return Images
 
     #this method will perform all image agmentation on an image
@@ -89,7 +94,8 @@ class Generator():
                 augmentSaturation=False, 
                 addBlur=False, 
                 addNoise=False, 
-                doRotation=False):
+                doRotation=False,
+                addSaturation=False):
 
         #do zoom
         if zoom:
@@ -134,5 +140,9 @@ class Generator():
             brightness = np.sum(image[:,:,-1])/(255*cols*rows)
             image = cv2.convertScaleAbs(image, alpha=1, beta=(255*(augmentBrigtness-brightness)))
         
-
+        #add noise
+        if addNoise:
+            noiseArray = np.random.random_sample(image.shape)
+            image[np.where(noiseArray < addNoise)] = 0
+            
     
