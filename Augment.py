@@ -3,7 +3,7 @@ import numpy as np
 import imutils
 import os
 from random import randint
-
+import time
 class Generator():
 
     #this will create a generator that yeilds images loaded from the directory specified
@@ -21,7 +21,9 @@ class Generator():
             imageStorage[i] = cv2.imread(nameList[i])
         while True:
             usedImages = np.random.randint(0, len(nameList), Batch_size)
-            return Generator.augmentImages(Images=imageStorage[usedImages],
+            a = time.time()
+            
+            c = Generator.augmentImages(Images=imageStorage[usedImages],
                                 zoom=zoom,
                                 doHorizontalFlips=doHorizontalFlips,
                                 doVerticalFlips=doVerticalFlips,
@@ -29,6 +31,8 @@ class Generator():
                                 addBlur=addBlur,
                                 addNoise=addNoise,
                                 doRotation=doRotation)
+            print(time.time()- a)
+            return c
     
     #This method will take in an array of images as well as max agumentation values
     #it will then compute a random uniform augmentation between the specified agumentation value
@@ -44,7 +48,22 @@ class Generator():
                       doRotation=False):
 
         for i in range(0, Images.shape[0]):
-            #TODO randomize horizonta/vertical flips
+            if doHorizontalFlips:
+                flipVal = np.random.uniform(0, 1)
+                if flipVal < 0.5:
+                    hFlipVal = True
+                else:
+                    hFlipVal = False
+            else:
+                hFlipVal = False
+            if doVerticalFlips:
+                flipVal = np.random.uniform(0, 1)
+                if flipVal < 0.5:
+                    vFlipVal = True
+                else:
+                    vFlipVal = False
+            else:
+                vFlipVal = False
             if zoom:
                 zoomVal = np.random.uniform(0, zoom)
             if augmentBrightness:
@@ -54,12 +73,12 @@ class Generator():
             if addNoise:
                 noiseVal = np.random.uniform(0, addNoise)
             if doRotation:
-                rotateVal = np.random.uniform(-doRotation, doRotation)
+                rotateVal = np.random.uniform(0, doRotation)
 
-            Images[i] = Generator.augment(Images[i], 
+            Images[i] = Generator.augment(image=Images[i], 
                                 zoom=zoomVal,
-                                doHorizontalFlips=doHorizontalFlips, 
-                                doVerticalFlips=doVerticalFlips, 
+                                doHorizontalFlips=hFlipVal, 
+                                doVerticalFlips=vFlipVal, 
                                 augmentBrightness=brightValue,
                                 addBlur=blurVal, 
                                 addNoise=noiseVal, 
@@ -125,5 +144,11 @@ class Generator():
         if addNoise:
             noiseArray = np.random.random_sample(image.shape)
             image[np.where(noiseArray < addNoise)] = 0
+<<<<<<< HEAD
         a = 1
+=======
+            
+        return image
+            
+>>>>>>> 4afa10a8c6ea747521eb5274b3fb6989ae73860f
     
