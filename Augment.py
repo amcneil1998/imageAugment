@@ -113,7 +113,7 @@ class Generator():
         
         #add rotation
         if doRotation:
-            image = imutils.rotate(image, doRotation)
+            image = imutils.rotate_bound(image, doRotation)
 
         #change brightness
         if augmentBrightness:
@@ -126,5 +126,4 @@ class Generator():
             noiseArray = np.random.random_sample(image.shape)
             image[np.where(noiseArray < addNoise)] = 0
         a = 1
-            
     
