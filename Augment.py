@@ -44,7 +44,22 @@ class Generator():
                       doRotation=False):
 
         for i in range(0, Images.shape[0]):
-            #TODO randomize horizonta/vertical flips
+            if doHorizontalFlips:
+                flipVal = np.random.uniform(0, 1)
+                if flipVal < 0.5:
+                    hFlipVal = True
+                else:
+                    hFlipVal = False
+            else:
+                vFlipVal = False
+            if doVerticalFlips:
+                flipVal = np.random.uniform(0, 1)
+                if flipVal < 0.5:
+                    vFlipVal = True
+                else:
+                    vFlipVal = False
+            else:
+                vFlipVal = False
             if zoom:
                 zoomVal = np.random.uniform(0, zoom)
             if augmentBrightness:
@@ -58,8 +73,8 @@ class Generator():
 
             Images[i] = Generator.augment(Images[i], 
                                 zoom=zoomVal,
-                                doHorizontalFlips=doHorizontalFlips, 
-                                doVerticalFlips=doVerticalFlips, 
+                                doHorizontalFlips=hFlipVal, 
+                                doVerticalFlips=vFlipVal, 
                                 augmentBrightness=brightValue,
                                 addBlur=blurVal, 
                                 addNoise=noiseVal, 
