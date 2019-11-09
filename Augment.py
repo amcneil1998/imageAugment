@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import imutils
 import os
 from random import randint
 import time
@@ -11,6 +10,7 @@ class Generator():
     #this will create a generator that yeilds images loaded from the directory specified
     #in dirPath.  Output will yeild images of size Batch_sizeximagecolsximagerowsximagedepth.
     #values specified are transfered directly into agument image
+    @staticmethod
     def createGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
         nameList = os.listdir(dirPath)
         for i in range(0, len(nameList)):
@@ -23,9 +23,7 @@ class Generator():
             imageStorage[i] = cv2.imread(nameList[i])
         while True:
             usedImages = np.random.randint(0, len(nameList), Batch_size)
-            a = time.time()
-            
-            c = Generator.augmentImages(Images=imageStorage[usedImages],
+            yield Generator.augmentImages(Images=imageStorage[usedImages],
                                 zoom=zoom,
                                 doHorizontalFlips=doHorizontalFlips,
                                 doVerticalFlips=doVerticalFlips,
@@ -33,13 +31,33 @@ class Generator():
                                 addBlur=addBlur,
                                 addNoise=addNoise,
                                 doRotation=doRotation)
-            print(time.time()- a)
-            return c
+    @staticmethod
+    #this method will allow you to test the generator parameters and view some images that have been augmented
+    def testGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+        nameList = os.listdir(dirPath)
+        for i in range(0, len(nameList)):
+            nameList[i] = dirPath + nameList[i]
+        testImage = cv2.imread(nameList[0])
+        cols, rows, depth = testImage.shape
+        imageStorage = np.zeros((len(nameList), cols, rows, depth), dtype=np.uint8)
+        imageStorage[0] = testImage
+        for i in range(1, len(nameList)):
+            imageStorage[i] = cv2.imread(nameList[i])
+        usedImages = np.random.randint(0, len(nameList), Batch_size)
+        return Generator.augmentImages(Images=imageStorage[usedImages],
+                            zoom=zoom,
+                            doHorizontalFlips=doHorizontalFlips,
+                            doVerticalFlips=doVerticalFlips,
+                            augmentBrightness=augmentBrightness,
+                            addBlur=addBlur,
+                            addNoise=addNoise,
+                            doRotation=doRotation)
     
     #This method will take in an array of images as well as max agumentation values
     #it will then compute a random uniform augmentation between the specified agumentation value
     #and zero. In the case of rotation, the maximum value is 360 and min is 0 in degrees. 
     #This will be done uniquely for each image.  The resulting array of agumented images is returned
+    @staticmethod
     def augmentImages(Images, 
                       zoom=False,
                       doHorizontalFlips=False, 
@@ -50,6 +68,7 @@ class Generator():
                       doRotation=False):
 
         for i in range(0, Images.shape[0]):
+            #randomize our agmentation values
             if doHorizontalFlips:
                 flipVal = np.random.uniform(0, 1)
                 if flipVal < 0.5:
@@ -68,15 +87,28 @@ class Generator():
                 vFlipVal = False
             if zoom:
                 zoomVal = np.random.uniform(0, zoom)
+            else:
+                zoomVal = False
             if augmentBrightness:
-                brightValue = np.random.uniform(0,augmentBrightness)
+                brightValue = np.random.uniform(-augmentBrightness,augmentBrightness)
+            else:
+                brightValue = False
             if addBlur:
                 blurVal = np.random.uniform(0, addBlur)
+            else:
+                blurVal = False
             if addNoise:
                 noiseVal = np.random.uniform(0, addNoise)
+            else:
+                noiseVal = False
             if doRotation:
-                rotateVal = np.random.uniform(0, doRotation)
-
+                rotateVal = np.random.uniform(-doRotation, doRotation)
+                #normalize to 360 degree rotations
+                if rotateVal < 0:
+                    rotateVal = 360 - rotateVal
+            else:
+                rotateVal = False
+            #augment the images
             Images[i] = Generator.augment(image=Images[i], 
                                 zoom=zoomVal,
                                 doHorizontalFlips=hFlipVal, 
@@ -92,6 +124,7 @@ class Generator():
     #decemals representing a 0-1.0 scale change
     #ceterain values like doHorizontalFlips should always be booleans
     #whereas others such as blur and brightness dont make since to be booleans
+    @staticmethod
     def augment(image, 
                 zoom=False,
                 doHorizontalFlips=False, 
@@ -107,7 +140,7 @@ class Generator():
 
         #do zoom
         if zoom:
-            height, width, depth = image.shape
+            height, width = image.shape[0:2]
             cropXStart = int(width/2 - (1-zoom)/2*width)
             cropXEnd = int(width/2 + (1-zoom)/2*width)
             cropYStart = int(height/2 - (1-zoom)/2*height)
@@ -153,17 +186,14 @@ class Generator():
 
         #change brightness
         if augmentBrightness:
-            cols, rows, none = image.shape
+            cols, rows = image.shape[0:2]
             brightness = np.sum(image[:,:,-1])/(255*cols*rows)
-            image = cv2.convertScaleAbs(image, alpha=1, beta=(255*(augmentBrightness-brightness)))
+            image = np.clip(image.astype(int) + 255*(augmentBrightness-brightness), 0, 255).astype(np.uint8)
         
         #add noise
         if addNoise:
             noiseArray = np.random.random_sample(image.shape)
             image[np.where(noiseArray < addNoise)] = 0
-        
-        a=1
-            
         return image
             
     
