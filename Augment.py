@@ -33,7 +33,7 @@ class Generator():
                                 doRotation=doRotation)
     @staticmethod
     #this method will allow you to test the generator parameters and view some images that have been augmented
-    def testGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+    def testGenerator(dirPath, numImages, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
         nameList = os.listdir(dirPath)
         for i in range(0, len(nameList)):
             nameList[i] = dirPath + nameList[i]
@@ -43,7 +43,7 @@ class Generator():
         imageStorage[0] = testImage
         for i in range(1, len(nameList)):
             imageStorage[i] = cv2.imread(nameList[i])
-        usedImages = np.random.randint(0, len(nameList), Batch_size)
+        usedImages = np.random.randint(0, len(nameList), numImages)
         return Generator.augmentImages(Images=imageStorage[usedImages],
                             zoom=zoom,
                             doHorizontalFlips=doHorizontalFlips,
@@ -133,11 +133,6 @@ class Generator():
                 addBlur=False, 
                 addNoise=False, 
                 doRotation=False):
-
-        cv2.imshow("img", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
-
         #do zoom
         if zoom:
             height, width = image.shape[0:2]
@@ -186,9 +181,13 @@ class Generator():
 
         #change brightness
         if augmentBrightness:
-            cols, rows = image.shape[0:2]
-            brightness = np.sum(image[:,:,-1])/(255*cols*rows)
-            image = np.clip(image.astype(int) + 255*(augmentBrightness-brightness), 0, 255).astype(np.uint8)
+            #honestly the -40 and /4 are kinda just randomly chosen to make it a bit more consistent 
+            if augmentBrightness < 0:
+                image = np.clip(image.astype(int) + 255*(augmentBrightness) - 40, 0, 255).astype(np.uint8)
+            else:
+                cols, rows = image.shape[0:2]
+                brightness = np.sum(image[:,:,-1])/(255*cols*rows)
+                image = np.clip(image.astype(int) + 255*(augmentBrightness + brightness)/4, 0, 255).astype(np.uint8)
         
         #add noise
         if addNoise:
@@ -196,6 +195,10 @@ class Generator():
             image[np.where(noiseArray < addNoise)] = 0
         return image
             
+def show(image):
+    cv2.imshow("img", image)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
     
 def rotate_image(image, angle):
     """
