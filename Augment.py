@@ -11,19 +11,39 @@ class Generator():
     #in dirPath.  Output will yeild images of size Batch_sizeximagecolsximagerowsximagedepth.
     #values specified are transfered directly into agument image
     @staticmethod
-    def createGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
-        nameList = os.listdir(dirPath)
-        for i in range(0, len(nameList)):
-            nameList[i] = dirPath + nameList[i]
-        testImage = cv2.imread(nameList[0])
-        cols, rows, depth = testImage.shape
-        imageStorage = np.zeros((len(nameList), cols, rows, depth), dtype=np.uint8)
-        imageStorage[0] = testImage
-        for i in range(1, len(nameList)):
-            imageStorage[i] = cv2.imread(nameList[i])
+    def createGenerator(trainImagePath, truthImagePath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+        if(trainImagePath[-1] != "/"):
+            trainImagePath += "/"
+        if(truthImagePath != "/"):
+            truthImagePath += "/"
+        #load the input images
+        trainList = os.listdir(trainImagePath)
+        trainList.sort()
+        for i in range(0, len(trainList)):
+            trainList[i] = trainImagePath + trainList[i]
+        sampleTrainImage = cv2.imread(trainList[0])
+        cols, rows, depth = sampleTrainImage.shape
+        trainImages = np.zeros((len(trainList), cols, rows, depth), dtype=np.uint8)
+        trainImages[0] = sampleTrainImage
+        for i in range(1, len(trainList)):
+            trainImages[i] = cv2.imread(trainList[i])
+        #load the truth images    
+        truthList = os.listdir(truthImagePath)
+        truthList.sort()
+        for i in range(0, len(truthList)):
+            truthList[i] = truthImagePath + truthList[i]
+        #for the masks all 3 dimensions are the same, thus shave to save memory
+        sampleTruthImage = cv2.imread(truthList[0])[:,:,0]
+        cols, rows = sampleTrainImage.shape
+        truthImages = np.zeros((len(truthList), cols, rows), dtype=np.uint8)
+        truthImages[0] = sampleTruthImage
+        for i in range(1, len(truthList)):
+            truthImages[i] = cv2.imread(truthList[i])[:,:,0]
+        #start the generator yeild process
         while True:
-            usedImages = np.random.randint(0, len(nameList), Batch_size)
-            yield Generator.augmentImages(Images=imageStorage[usedImages],
+            usedImages = np.random.randint(0, len(trainList), Batch_size)
+            yield Generator.augmentImages(trainImages=trainImages[usedImages], 
+                                truthImages=truthImages[usedImages],
                                 zoom=zoom,
                                 doHorizontalFlips=doHorizontalFlips,
                                 doVerticalFlips=doVerticalFlips,
@@ -33,18 +53,38 @@ class Generator():
                                 doRotation=doRotation)
     @staticmethod
     #this method will allow you to test the generator parameters and view some images that have been augmented
-    def testGenerator(dirPath, numImages, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
-        nameList = os.listdir(dirPath)
-        for i in range(0, len(nameList)):
-            nameList[i] = dirPath + nameList[i]
-        testImage = cv2.imread(nameList[0])
-        cols, rows, depth = testImage.shape
-        imageStorage = np.zeros((len(nameList), cols, rows, depth), dtype=np.uint8)
-        imageStorage[0] = testImage
-        for i in range(1, len(nameList)):
-            imageStorage[i] = cv2.imread(nameList[i])
-        usedImages = np.random.randint(0, len(nameList), numImages)
-        return Generator.augmentImages(Images=imageStorage[usedImages],
+    def testGenerator(trainImagePath, truthImagePath, numImages, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+        if(trainImagePath[-1] != "/"):
+            trainImagePath += "/"
+        if(truthImagePath != "/"):
+            truthImagePath += "/"
+        #load the input images
+        trainList = os.listdir(trainImagePath)
+        trainList.sort()
+        for i in range(0, len(trainList)):
+            trainList[i] = trainImagePath + trainList[i]
+        sampleTrainImage = cv2.imread(trainList[0])
+        cols, rows, depth = sampleTrainImage.shape
+        trainImages = np.zeros((len(trainList), cols, rows, depth), dtype=np.uint8)
+        trainImages[0] = sampleTrainImage
+        for i in range(1, len(trainList)):
+            trainImages[i] = cv2.imread(trainList[i])
+        #load the truth images    
+        truthList = os.listdir(truthImagePath)
+        truthList.sort()
+        for i in range(0, len(truthList)):
+            truthList[i] = truthImagePath + truthList[i]
+        #for the masks all 3 dimensions are the same, thus shave to save memory
+        sampleTruthImage = cv2.imread(truthList[0])[:,:,0]
+        cols, rows = sampleTrainImage.shape
+        truthImages = np.zeros((len(truthList), cols, rows), dtype=np.uint8)
+        truthImages[0] = sampleTruthImage
+        for i in range(1, len(truthList)):
+            truthImages[i] = cv2.imread(truthList[i])[:,:,0]
+        #start the generator yeild process
+        usedImages = np.random.randint(0, len(trainList), numImages)
+        return Generator.augmentImages(trainImages=trainImages[usedImages], 
+                            truthImages=truthImages[usedImages],
                             zoom=zoom,
                             doHorizontalFlips=doHorizontalFlips,
                             doVerticalFlips=doVerticalFlips,
@@ -58,7 +98,8 @@ class Generator():
     #and zero. In the case of rotation, the maximum value is 360 and min is 0 in degrees. 
     #This will be done uniquely for each image.  The resulting array of agumented images is returned
     @staticmethod
-    def augmentImages(Images, 
+    def augmentImages(trainImages,
+                      truthImages, 
                       zoom=False,
                       doHorizontalFlips=False, 
                       doVerticalFlips=False, 
@@ -67,7 +108,7 @@ class Generator():
                       addNoise=False, 
                       doRotation=False):
 
-        for i in range(0, Images.shape[0]):
+        for i in range(0, trainImages.shape[0]):
             #randomize our agmentation values
             if doHorizontalFlips:
                 flipVal = np.random.uniform(0, 1)
@@ -109,7 +150,7 @@ class Generator():
             else:
                 rotateVal = False
             #augment the images
-            Images[i] = Generator.augment(image=Images[i], 
+            trainImages[i] = Generator.augment(image=trainImages[i], 
                                 zoom=zoomVal,
                                 doHorizontalFlips=hFlipVal, 
                                 doVerticalFlips=vFlipVal, 
@@ -117,7 +158,15 @@ class Generator():
                                 addBlur=blurVal, 
                                 addNoise=noiseVal, 
                                 doRotation=rotateVal)
-        return Images
+            truthImages[i] = Generator.augment(image=truthImages[i],
+                                                zoom=zoomVal,
+                                                doHorizontalFlips=hFlipVal,
+                                                doVerticalFlips=vFlipVal,
+                                                augmentBrightness=False,
+                                                addBlur=False,
+                                                addNoise=False,
+                                                doRotation=rotateVal)
+        return (trainImages, truthImages)
 
     #this method will perform all image agmentation on an image
     #input values can be either Booleans such as false or 

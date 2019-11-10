@@ -1,6 +1,6 @@
 import cv2
 import Augment
-testImages = Augment.Generator.testGenerator(dirPath='/home/cap1a1n/SeniorDesign/ImageAugment/picturescopy/', numImages=256, zoom=0.1, doHorizontalFlips=True, doVerticalFlips=True, augmentBrightness=0.1, addBlur=0.1, 
+testImages = Augment.Generator.testGenerator(trainImagePath='/home/cap1a1n/SeniorDesign/ImageAugment/picturescopy/', truthImagePath='/home/cap1a1n/SeniorDesign/ImageAugment/picturescopy/', numImages=256, zoom=0.1, doHorizontalFlips=True, doVerticalFlips=True, augmentBrightness=0.1, addBlur=0.1, 
 addNoise=0.05, doRotation=20)
 '''
 for i in range(0, len(testImages)):
