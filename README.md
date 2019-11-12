@@ -14,7 +14,7 @@ This package requires the following libraries to be installed in your environmen
 
 The Augment.py class one class with four static methods highlighted in the following sections.
 
-#createGenerator
+# createGenerator
 This method can be called with the following python code:
 
 ```
@@ -43,7 +43,7 @@ This method takes the following arguments:
 
 This method returns a generator.
 
-#testGenerator
+# testGenerator
 This method can be called with the following python code:
 
 ```
@@ -54,7 +54,7 @@ It takes the same arguments as the createGenerator method, except Batch_size is 
 
 This method returns specified number of images that have been augmented.
 
-#augmentImages
+# augmentImages
 This method can be called with the following python code:
 
 ```
@@ -69,10 +69,10 @@ It has the following arguments:
 
 This method is responsible for the randomness in the augmentation. It returns an array of images augmented randomly with the specified parameters.
 
-#augment
+# augment
 This method is responsible for doing the actual image augmentation.  It has the same inputs as augmentImages, except it takes a single image.  In addition the values passed in are the actual augmentation values used.
 
-#Additional Repository Files
+# Additional Repository Files
 * Pictures(directory)- Some sample images to augment, has regular pictures and greyscale pictures called mask.
 
 * ```__init__.py```- Python import file.
