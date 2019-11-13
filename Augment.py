@@ -4,6 +4,10 @@ import os
 from random import randint
 import time
 import math
+from numpy import array
+from numpy import argmax
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
 
 class Generator():
 
@@ -11,10 +15,35 @@ class Generator():
     #in dirPath.  Output will yeild images of size Batch_sizeximagecolsximagerowsximagedepth.
     #values specified are transfered directly into agument image
     @staticmethod
-    def createGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
-        nameList = os.listdir(dirPath)
-        for i in range(0, len(nameList)):
-            nameList[i] = dirPath + nameList[i]
+    def createGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):  
+        rootDir = dirPath
+        nameList = ""
+        labels = []
+        for dirName, subdirList, fileList in os.walk(rootDir):
+            #print('Found directory: %s' % dirName)
+            #For each subdirectory, append files to nameList
+            lengthBeforeAppend = len(nameList) 
+            nameList += os.listdir(dirName)
+
+            #Get labels
+            for fName in fileList:
+                labels += dirName
+        
+            for i in range(lengthBeforeAppend, len(nameList)):
+                nameList[i] = dirPath + nameList[i]
+
+        #One hot encode labels
+        labels = np.array(labels)
+
+        # integer encode
+        label_encoder = LabelEncoder()
+        integer_encoded = label_encoder.fit_transform(labels)
+
+        # binary encode
+        onehot_encoder = OneHotEncoder(sparse=False)
+        integer_encoded = integer_encoded.reshape(len(integer_encoded), 1)
+        onehot_encoded = onehot_encoder.fit_transform(integer_encoded)
+
         testImage = cv2.imread(nameList[0])
         cols, rows, depth = testImage.shape
         imageStorage = np.zeros((len(nameList), cols, rows, depth), dtype=np.uint8)
@@ -23,6 +52,7 @@ class Generator():
             imageStorage[i] = cv2.imread(nameList[i])
         while True:
             usedImages = np.random.randint(0, len(nameList), Batch_size)
+            label = onehot_encoded[usedImages]
             yield Generator.augmentImages(Images=imageStorage[usedImages],
                                 zoom=zoom,
                                 doHorizontalFlips=doHorizontalFlips,
@@ -30,7 +60,7 @@ class Generator():
                                 augmentBrightness=augmentBrightness,
                                 addBlur=addBlur,
                                 addNoise=addNoise,
-                                doRotation=doRotation)
+                                doRotation=doRotation), label
     @staticmethod
     #this method will allow you to test the generator parameters and view some images that have been augmented
     def testGenerator(dirPath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
@@ -323,3 +353,6 @@ def crop_around_center(image, width, height):
     y2 = int(image_center[1] + height * 0.5)
 
     return image[y1:y2, x1:x2]
+
+
+
