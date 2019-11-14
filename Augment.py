@@ -117,7 +117,7 @@ class Generator():
                                 addBlur=blurVal, 
                                 addNoise=noiseVal, 
                                 doRotation=rotateVal)
-        return Images
+        return Images.astype(int)/256
 
     #this method will perform all image agmentation on an image
     #input values can be either Booleans such as false or 
