@@ -11,10 +11,10 @@ class Generator():
     #in dirPath.  Output will yeild images of size Batch_sizeximagecolsximagerowsximagedepth.
     #values specified are transfered directly into agument image
     @staticmethod
-    def createGenerator(trainImagePath, truthImagePath, Batch_size, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+    def createGenerator(trainImagePath, truthImagePath, Batch_size, inRes, outRes, flattenOutput=False, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
         if(trainImagePath[-1] != "/"):
             trainImagePath += "/"
-        if(truthImagePath != "/"):
+        if(truthImagePath[-1] != "/"):
             truthImagePath += "/"
         #load the input images
         trainList = os.listdir(trainImagePath)
@@ -23,25 +23,49 @@ class Generator():
             trainList[i] = trainImagePath + trainList[i]
         sampleTrainImage = cv2.imread(trainList[0])
         cols, rows, depth = sampleTrainImage.shape
-        trainImages = np.zeros((len(trainList), cols, rows, depth), dtype=np.uint8)
-        trainImages[0] = sampleTrainImage
-        for i in range(1, len(trainList)):
-            trainImages[i] = cv2.imread(trainList[i])
+        if (cols, rows) < inRes:
+            mode = "Pad"
+        else:
+            mode = "Downscale"
+        trainImages = np.zeros((len(trainList), inRes[1], inRes[0], depth), dtype=np.uint8)
+        if mode is "Pad":
+            hPad = (inRes[0] - cols)/2
+            vPad = (inRes[1] - rows)/2
+            trainImages[0] = np.pad(sampleTrainImage, ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
+            for i in range(1, len(trainList)):
+                trainImages[i] = np.pad(cv2.imread(trainList[i]), ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
+        if mode is "Downscale":
+            trainImages[0] = cv2.resize(sampleTrainImage, inRes, interpolation=cv2.INTER_AREA)
+            for i in range(1, len(trainList)):
+                trainImages[i] = cv2.resize(cv2.imread(trainList[i]), inRes, interpolation=cv2.INTER_AREA)
         #load the truth images    
         truthList = os.listdir(truthImagePath)
         truthList.sort()
         for i in range(0, len(truthList)):
             truthList[i] = truthImagePath + truthList[i]
         #for the masks all 3 dimensions are the same, thus shave to save memory
-        sampleTruthImage = cv2.imread(truthList[0])[:,:,0]
-        cols, rows = sampleTrainImage.shape
-        truthImages = np.zeros((len(truthList), cols, rows), dtype=np.uint8)
-        truthImages[0] = sampleTruthImage
-        for i in range(1, len(truthList)):
-            truthImages[i] = cv2.imread(truthList[i])[:,:,0]
+        sampleTruthImage = cv2.imread(truthList[0])
+        cols, rows, depth = sampleTrainImage.shape
+        if (cols, rows) < outRes:
+            mode = "Pad"
+        else:
+            mode = "Downscale"
+        truthImages = np.zeros((len(truthList), outRes[1], outRes[0], depth), dtype=np.uint8)
+        if mode is "Pad":
+            hPad = (outRes[0] - cols)/2
+            vPad = (outRes[1] - rows)/2
+            truthImages[0] = np.pad(sampleTruthImage, ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
+            for i in range(1, len(truthList)):
+                truthImages[i] = np.pad(cv2.imread(truthList[i]), ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
+        if mode is "Downscale":
+            truthImages[0] = cv2.resize(sampleTruthImage, outRes, interpolation=cv2.INTER_AREA)
+            for i in range(1, len(truthList)):
+                truthImages[i] = cv2.resize(cv2.imread(truthList[i]), outRes, interpolation=cv2.INTER_AREA)
+        if flattenOutput:
+            truthImages = np.reshape(truthImages, (truthImages.shape[0], truthImages.shape[1]*truthImages.shape[2], 3))
         #start the generator yeild process
         while True:
-            usedImages = np.random.randint(0, len(trainList), Batch_size)
+            usedImages = np.random.randint(0, len(trainList) - 1, Batch_size)
             yield Generator.augmentImages(trainImages=trainImages[usedImages], 
                                 truthImages=truthImages[usedImages],
                                 zoom=zoom,
@@ -65,10 +89,10 @@ class Generator():
             trainList[i] = trainImagePath + trainList[i]
         sampleTrainImage = cv2.imread(trainList[0])
         cols, rows, depth = sampleTrainImage.shape
-        trainImages = np.zeros((len(trainList), cols, rows, depth), dtype=np.uint8)
-        trainImages[0] = sampleTrainImage
+        trainImages = np.zeros((len(trainList), cols + 24, rows + 128, depth), dtype=np.uint8)
+        trainImages[0] = np.pad(sampleTrainImage, ((12, 12), (64,64), (0,0)), 'edge')
         for i in range(1, len(trainList)):
-            trainImages[i] = cv2.imread(trainList[i])
+            trainImages[i] = np.pad(cv2.imread(trainList[i]), ((12, 12), (64,64), (0,0)), 'edge')
         #load the truth images    
         truthList = os.listdir(truthImagePath)
         truthList.sort()
@@ -77,10 +101,10 @@ class Generator():
         #for the masks all 3 dimensions are the same, thus shave to save memory
         sampleTruthImage = cv2.imread(truthList[0])[:,:,0]
         cols, rows = sampleTrainImage.shape
-        truthImages = np.zeros((len(truthList), cols, rows), dtype=np.uint8)
-        truthImages[0] = sampleTruthImage
+        truthImages = np.zeros((len(truthList), cols + 24, rows + 128), dtype=np.uint8)
+        truthImages[0] = np.pad(sampleTruthImage, ((12, 12), (64,64)), 'edge')
         for i in range(1, len(truthList)):
-            truthImages[i] = cv2.imread(truthList[i])[:,:,0]
+            truthImages[i] = np.pad(cv2.imread(truthList[i])[:,:,0], ((12, 12), (64,64)), 'edge')
         #start the generator yeild process
         usedImages = np.random.randint(0, len(trainList), numImages)
         return Generator.augmentImages(trainImages=trainImages[usedImages], 
@@ -166,7 +190,7 @@ class Generator():
                                                 addBlur=False,
                                                 addNoise=False,
                                                 doRotation=rotateVal)
-        return (trainImages, truthImages)
+        return (trainImages.astype("float")/256, truthImages.astype("float")/256)
 
     #this method will perform all image agmentation on an image
     #input values can be either Booleans such as false or 
