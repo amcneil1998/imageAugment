@@ -12,32 +12,44 @@ class Generator():
     #values specified are transfered directly into agument image
     @staticmethod
     def createGenerator(trainImagePath, truthImagePath, Batch_size, inRes, outRes, flattenOutput=False, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+        #add the / to the end of the paths to ensure the read functions work correctly
         if(trainImagePath[-1] != "/"):
             trainImagePath += "/"
         if(truthImagePath[-1] != "/"):
             truthImagePath += "/"
         #load the input images
         trainList = os.listdir(trainImagePath)
+        #sort in numerical order
         trainList.sort()
+        #make a list of all the image file paths
         for i in range(0, len(trainList)):
             trainList[i] = trainImagePath + trainList[i]
+        # load a sample image to get res and determine mode
         sampleTrainImage = cv2.imread(trainList[0])
         cols, rows, depth = sampleTrainImage.shape
+        #pad mode 0 pads images to specified res
         if (cols, rows) < inRes:
             mode = "Pad"
+        #downscale mode resizes images to specified res
         else:
             mode = "Downscale"
+        #make the image storage array
         trainImages = np.zeros((len(trainList), inRes[1], inRes[0], depth), dtype=np.uint8)
         if mode is "Pad":
+            #calculate pad sizes
             hPad = (inRes[0] - cols)/2
             vPad = (inRes[1] - rows)/2
+            #make the sample image the first in the image array to save loading time
             trainImages[0] = np.pad(sampleTrainImage, ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
+            #load and pad all images
             for i in range(1, len(trainList)):
                 trainImages[i] = np.pad(cv2.imread(trainList[i]), ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
         if mode is "Downscale":
-            trainImages[0] = cv2.resize(sampleTrainImage, inRes, interpolation=cv2.INTER_AREA)
+            trainImages[0] = cv2.resize(sampleTrainImage, inRes, interpolation=cv2.INTER_AREA) #downscale test image
+            #load and downscale all images
             for i in range(1, len(trainList)):
                 trainImages[i] = cv2.resize(cv2.imread(trainList[i]), inRes, interpolation=cv2.INTER_AREA)
+        #now onto the truth (or labels) this is the same process as the input images for the most part
         #load the truth images    
         truthList = os.listdir(truthImagePath)
         truthList.sort()
@@ -61,11 +73,12 @@ class Generator():
             truthImages[0] = cv2.resize(sampleTruthImage, outRes, interpolation=cv2.INTER_AREA)
             for i in range(1, len(truthList)):
                 truthImages[i] = cv2.resize(cv2.imread(truthList[i]), outRes, interpolation=cv2.INTER_AREA)
+        #the only difference is here where we have the option to remove the third dimension from the output
         if flattenOutput:
             truthImages = np.reshape(truthImages, (truthImages.shape[0], truthImages.shape[1]*truthImages.shape[2], 3))
         #start the generator yeild process
         while True:
-            usedImages = np.random.randint(0, len(trainList) - 1, Batch_size)
+            usedImages = np.random.randint(0, len(trainList) - 1, Batch_size) #get batch size random images from the array and apply agmentation
             yield Generator.augmentImages(trainImages=trainImages[usedImages], 
                                 truthImages=truthImages[usedImages],
                                 zoom=zoom,
@@ -77,36 +90,74 @@ class Generator():
                                 doRotation=doRotation)
     @staticmethod
     #this method will allow you to test the generator parameters and view some images that have been augmented
-    def testGenerator(trainImagePath, truthImagePath, numImages, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+    #this code is the same as the generator but with the yeild removed.  It should only be used for testing purposes.
+    def testGenerator(trainImagePath, truthImagePath, Batch_size, inRes, outRes, flattenOutput=False, zoom=False, doHorizontalFlips=False, doVerticalFlips=False, augmentBrightness=False, addBlur=False, addNoise=False, doRotation=False):
+        #add the / to the end of the paths to ensure the read functions work correctly
         if(trainImagePath[-1] != "/"):
             trainImagePath += "/"
-        if(truthImagePath != "/"):
+        if(truthImagePath[-1] != "/"):
             truthImagePath += "/"
         #load the input images
         trainList = os.listdir(trainImagePath)
+        #sort in numerical order
         trainList.sort()
+        #make a list of all the image file paths
         for i in range(0, len(trainList)):
             trainList[i] = trainImagePath + trainList[i]
+        # load a sample image to get res and determine mode
         sampleTrainImage = cv2.imread(trainList[0])
         cols, rows, depth = sampleTrainImage.shape
-        trainImages = np.zeros((len(trainList), cols + 24, rows + 128, depth), dtype=np.uint8)
-        trainImages[0] = np.pad(sampleTrainImage, ((12, 12), (64,64), (0,0)), 'edge')
-        for i in range(1, len(trainList)):
-            trainImages[i] = np.pad(cv2.imread(trainList[i]), ((12, 12), (64,64), (0,0)), 'edge')
+        #pad mode 0 pads images to specified res
+        if (cols, rows) < inRes:
+            mode = "Pad"
+        #downscale mode resizes images to specified res
+        else:
+            mode = "Downscale"
+        #make the image storage array
+        trainImages = np.zeros((len(trainList), inRes[1], inRes[0], depth), dtype=np.uint8)
+        if mode is "Pad":
+            #calculate pad sizes
+            hPad = (inRes[0] - cols)/2
+            vPad = (inRes[1] - rows)/2
+            #make the sample image the first in the image array to save loading time
+            trainImages[0] = np.pad(sampleTrainImage, ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
+            #load and pad all images
+            for i in range(1, len(trainList)):
+                trainImages[i] = np.pad(cv2.imread(trainList[i]), ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
+        if mode is "Downscale":
+            trainImages[0] = cv2.resize(sampleTrainImage, inRes, interpolation=cv2.INTER_AREA) #downscale test image
+            #load and downscale all images
+            for i in range(1, len(trainList)):
+                trainImages[i] = cv2.resize(cv2.imread(trainList[i]), inRes, interpolation=cv2.INTER_AREA)
+        #now onto the truth (or labels) this is the same process as the input images for the most part
         #load the truth images    
         truthList = os.listdir(truthImagePath)
         truthList.sort()
         for i in range(0, len(truthList)):
             truthList[i] = truthImagePath + truthList[i]
         #for the masks all 3 dimensions are the same, thus shave to save memory
-        sampleTruthImage = cv2.imread(truthList[0])[:,:,0]
-        cols, rows = sampleTrainImage.shape
-        truthImages = np.zeros((len(truthList), cols + 24, rows + 128), dtype=np.uint8)
-        truthImages[0] = np.pad(sampleTruthImage, ((12, 12), (64,64)), 'edge')
-        for i in range(1, len(truthList)):
-            truthImages[i] = np.pad(cv2.imread(truthList[i])[:,:,0], ((12, 12), (64,64)), 'edge')
-        #start the generator yeild process
-        usedImages = np.random.randint(0, len(trainList), numImages)
+        sampleTruthImage = cv2.imread(truthList[0])
+        cols, rows, depth = sampleTrainImage.shape
+        if (cols, rows) < outRes:
+            mode = "Pad"
+        else:
+            mode = "Downscale"
+        truthImages = np.zeros((len(truthList), outRes[1], outRes[0], depth), dtype=np.uint8)
+        if mode is "Pad":
+            hPad = (outRes[0] - cols)/2
+            vPad = (outRes[1] - rows)/2
+            truthImages[0] = np.pad(sampleTruthImage, ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
+            for i in range(1, len(truthList)):
+                truthImages[i] = np.pad(cv2.imread(truthList[i]), ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
+        if mode is "Downscale":
+            truthImages[0] = cv2.resize(sampleTruthImage, outRes, interpolation=cv2.INTER_AREA)
+            for i in range(1, len(truthList)):
+                truthImages[i] = cv2.resize(cv2.imread(truthList[i]), outRes, interpolation=cv2.INTER_AREA)
+        #the only difference is here where we have the option to remove the third dimension from the output
+        if flattenOutput:
+            truthImages = np.reshape(truthImages, (truthImages.shape[0], truthImages.shape[1]*truthImages.shape[2], 3))
+        #get and return random images
+        usedImages = np.random.randint(0, len(trainList) - 1, Batch_size) #get batch size random images from the array and apply agmentation
         return Generator.augmentImages(trainImages=trainImages[usedImages], 
                             truthImages=truthImages[usedImages],
                             zoom=zoom,
@@ -116,7 +167,7 @@ class Generator():
                             addBlur=addBlur,
                             addNoise=addNoise,
                             doRotation=doRotation)
-    
+
     #This method will take in an array of images as well as max agumentation values
     #it will then compute a random uniform augmentation between the specified agumentation value
     #and zero. In the case of rotation, the maximum value is 360 and min is 0 in degrees. 
@@ -134,6 +185,8 @@ class Generator():
 
         for i in range(0, trainImages.shape[0]):
             #randomize our agmentation values
+            #it is important that we augment values uniformly on both input and output images
+            #this process ensures that
             if doHorizontalFlips:
                 flipVal = np.random.uniform(0, 1)
                 if flipVal < 0.5:
@@ -208,13 +261,15 @@ class Generator():
                 doRotation=False):
         #do zoom
         if zoom:
+            #determine crop properties
             height, width = image.shape[0:2]
             cropXStart = int(width/2 - (1-zoom)/2*width)
             cropXEnd = int(width/2 + (1-zoom)/2*width)
             cropYStart = int(height/2 - (1-zoom)/2*height)
             cropYEnd = int(height/2 + (1-zoom)/2*height)
-
+            #crop
             cropped = image[cropYStart:cropYEnd, cropXStart:cropXEnd]
+            #resize and hold onto image
             image = cv2.resize(cropped, (image.shape[1], image.shape[0]))
 
         #flip only on horizontal
@@ -232,6 +287,7 @@ class Generator():
 
         #add blur
         if addBlur:
+            #cv2 blur from cv2 docs
             kernelSize = int(addBlur * 100)
             if kernelSize % 2 == 0:
                 kernelSize += 1
@@ -267,12 +323,14 @@ class Generator():
             noiseArray = np.random.random_sample(image.shape)
             image[np.where(noiseArray < addNoise)] = 0
         return image
-            
+
+#simple method to display an image       
 def show(image):
     cv2.imshow("img", image)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
-    
+
+#after this point this is opencv voodo that we found on the web 
 def rotate_image(image, angle):
     """
     Rotates an OpenCV 2 / NumPy image about it's centre by the given angle
