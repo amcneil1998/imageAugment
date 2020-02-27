@@ -70,9 +70,9 @@ class Generator():
             for i in range(1, len(truthList)):
                 truthImages[i] = np.pad(cv2.imread(truthList[i]), ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
         if mode is "Downscale":
-            truthImages[0] = cv2.resize(sampleTruthImage, outRes, interpolation=cv2.INTER_AREA)
+            truthImages[0] = cv2.resize(sampleTruthImage, outRes, interpolation=cv2.INTER_NEAREST)
             for i in range(1, len(truthList)):
-                truthImages[i] = cv2.resize(cv2.imread(truthList[i]), outRes, interpolation=cv2.INTER_AREA)
+                truthImages[i] = cv2.resize(cv2.imread(truthList[i]), outRes, interpolation=cv2.INTER_NEAREST)
         #the only difference is here where we have the option to remove the third dimension from the output
         if flattenOutput:
             truthImages = np.reshape(truthImages, (truthImages.shape[0], truthImages.shape[1]*truthImages.shape[2], 3))
