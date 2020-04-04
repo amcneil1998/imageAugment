@@ -26,7 +26,7 @@ class Generator():
             trainList[i] = trainImagePath + trainList[i]
         # load a sample image to get res and determine mode
         sampleTrainImage = cv2.imread(trainList[0])
-        cols, rows, depth = sampleTrainImage.shape
+        rows, cols, depth = sampleTrainImage.shape
         #pad mode 0 pads images to specified res
         if (cols, rows) < inRes:
             mode = "Pad"
@@ -37,8 +37,8 @@ class Generator():
         trainImages = np.zeros((len(trainList), inRes[1], inRes[0], depth), dtype=np.uint8)
         if mode is "Pad":
             #calculate pad sizes
-            hPad = (inRes[0] - cols)/2
-            vPad = (inRes[1] - rows)/2
+            hPad = int((inRes[0] - cols)/2)
+            vPad = int((inRes[1] - rows)/2)
             #make the sample image the first in the image array to save loading time
             trainImages[0] = np.pad(sampleTrainImage, ((vPad, vPad), (hPad,hPad), (0,0)), 'constant')
             #load and pad all images
@@ -57,15 +57,15 @@ class Generator():
             truthList[i] = truthImagePath + truthList[i]
         #for the masks all 3 dimensions are the same, thus shave to save memory
         sampleTruthImage = cv2.imread(truthList[0])
-        cols, rows, depth = sampleTrainImage.shape
+        rows, cols, depth = sampleTrainImage.shape
         if (cols, rows) < outRes:
             mode = "Pad"
         else:
             mode = "Downscale"
         truthImages = np.zeros((len(truthList), outRes[1], outRes[0], depth), dtype=np.uint8)
         if mode is "Pad":
-            hPad = (outRes[0] - cols)/2
-            vPad = (outRes[1] - rows)/2
+            hPad = int((outRes[0] - cols)/2)
+            vPad = int((outRes[1] - rows)/2)
             truthImages[0] = np.pad(sampleTruthImage, ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
             for i in range(1, len(truthList)):
                 truthImages[i] = np.pad(cv2.imread(truthList[i]), ((vPad, vPad), (hPad, hPad), (0,0)), 'constant')
